@@ -42,10 +42,10 @@ public class Accordingly : MonoBehaviour
     public string dirPath = "";
     public RawImage ri;
     public Texture2D srcTex;
-    public Texture2D srcTex256;
+    public Texture2D srcTex2;
     public Texture2D destTex;
     public static Color32[] srcImg;
-    public Color32[] srcImg256;
+    public Color32[] srcImg2;
     public Color32[] destImg;
     public Color32[] originalColors;
     public string[] allPNGs;
@@ -54,8 +54,9 @@ public class Accordingly : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        destTex = new Texture2D(32, 32);
-        srcTex = new Texture2D(32, 32);
+        destTex = new Texture2D(32, 32, TextureFormat.ARGB32, false);
+        srcTex = new Texture2D(32, 32, TextureFormat.ARGB32, false);
+        srcTex2 = new Texture2D(32, 32, TextureFormat.ARGB32, false);
         StartCoroutine(ProcessBatch());
     }
     private static int GetClosestColor(Color32[] colorArray, Color32 baseColor)
@@ -96,6 +97,7 @@ public class Accordingly : MonoBehaviour
     {
         
         srcTex.filterMode = FilterMode.Point;
+        srcTex2.filterMode = FilterMode.Point;
         destTex.filterMode = FilterMode.Point;
         tempColor = new Color32(255, 255, 255, 255);
 
@@ -142,49 +144,40 @@ public class Accordingly : MonoBehaviour
 
                             Debug.Log(output);
                         
-                        if (File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"))
+                        if (File.Exists(view[v].FullName) && File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"))
                         {
-                            
+
                             srcTex.LoadImage(File.ReadAllBytes(view[v].FullName));
                             srcTex.Apply();
+                            srcImg = new Color32[srcTex.width * srcTex.height];
                             srcImg = srcTex.GetPixels32();
-                            destTex.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"));
-                            destTex.Apply();
-                            destImg = destTex.GetPixels32();
-                            int w = 0;
-                            int h = 0;
-                            if (srcTex.width > destTex.width)
-                            {
-                                w = srcTex.width;
-                            } else
-                            {
-                                w = destTex.width;
-                            }
-                            if (srcTex.height > destTex.height)
-                            {
-                                h = srcTex.height;
-                            }
-                            else
-                            {
-                                h = destTex.height;
-                            }
-                            destTex = new Texture2D(w, h);
+                            srcTex2.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"));
+                            srcTex2.Apply();
+                            srcImg2 = new Color32[srcTex2.width * srcTex2.height];
+                            srcImg2 = srcTex2.GetPixels32();
+                            int w = srcTex2.width;
+                            int h = srcTex2.height;
+
+                            destTex = new Texture2D(w, h, TextureFormat.ARGB32, false);
+                            destImg = new Color32[w * h];
+
                             for (int y = 0; y < h; y++)
                             {
                                 for (int x = 0; x < w; x++)
                                 {
-                                    destImg[(y * srcTex.width) + x] = Color.clear;
+                                    destImg[(y * w) + x] = Color.clear;
+                                    destImg[(y * w) + x].a = 0;
                                 }
                             }
-                            Color clear = srcImg[0];
+
                             for (int y = 0; y < h; y++)
                             {
                                 for (int x = 0; x < w; x++)
                                 {
-                                    destImg[(y * srcTex.width) + x] = srcImg[GetClosestColor(srcImg, destImg[(y * srcTex.width) + x])];
-                                    if (destImg[(y * srcTex.width) + x] == clear)
+                                    destImg[(y * w) + x] = srcImg[GetClosestColor(srcImg, srcTex2.GetPixel(x, y))];
+                                    if (destImg[(y * w) + x].r == srcImg[0].r && destImg[(y * w) + x].g == srcImg[0].g && destImg[(y * w) + x].b == srcImg[0].b)
                                     {
-                                        destImg[(y * srcTex.width) + x] = Color.clear;
+                                        destImg[(y * w) + x].a = 0;
                                     }
                                 }
                             }
@@ -192,54 +185,47 @@ public class Accordingly : MonoBehaviour
                             destTex.Apply();
                             byte[] destBytes = destTex.EncodeToPNG();
                             File.WriteAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png", destBytes);
+                            srcTex.filterMode = FilterMode.Point;
+                            srcTex2.filterMode = FilterMode.Point;
+                            destTex.filterMode = FilterMode.Point;
                             ri.texture = destTex;
                             ri.SizeToParent(0);
                         } else
                         {
                             
-                            if (File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"))
+                            if (File.Exists(view[v].FullName) && File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"))
                             {
                                 srcTex.LoadImage(File.ReadAllBytes(view[v].FullName));
                                 srcTex.Apply();
+                                srcImg = new Color32[srcTex.width * srcTex.height];
                                 srcImg = srcTex.GetPixels32();
-                                destTex.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"));
-                                destTex.Apply();
-                                destImg = destTex.GetPixels32();
-                                int w = 0;
-                                int h = 0;
-                                if (srcTex.width > destTex.width)
-                                {
-                                    w = srcTex.width;
-                                }
-                                else
-                                {
-                                    w = destTex.width;
-                                }
-                                if (srcTex.height > destTex.height)
-                                {
-                                    h = srcTex.height;
-                                }
-                                else
-                                {
-                                    h = destTex.height;
-                                }
-                                destTex = new Texture2D(w, h);
+                                srcTex2.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"));
+                                srcTex2.Apply();
+                                srcImg2 = new Color32[srcTex2.width * srcTex2.height];
+                                srcImg2 = srcTex2.GetPixels32();
+                                int w = srcTex2.width;
+                                int h = srcTex2.height;
+
+                                destTex = new Texture2D(w, h, TextureFormat.ARGB32, false);
+                                destImg = new Color32[w * h];
+
                                 for (int y = 0; y < h; y++)
                                 {
                                     for (int x = 0; x < w; x++)
                                     {
-                                        destImg[(y * srcTex.width) + x] = Color.clear;
+                                        destImg[(y * w) + x] = Color.clear;
+                                        destImg[(y * w) + x].a = 0;
                                     }
                                 }
-                                Color clear = srcImg[0];
+
                                 for (int y = 0; y < h; y++)
                                 {
                                     for (int x = 0; x < w; x++)
                                     {
-                                        destImg[(y * srcTex.width) + x] = srcImg[GetClosestColor(srcImg, destImg[(y * srcTex.width) + x])];
-                                        if (destImg[(y * srcTex.width) + x] == clear)
+                                        destImg[(y * w) + x] = srcImg[GetClosestColor(srcImg, srcTex2.GetPixel(x, y))];
+                                        if (destImg[(y * w) + x].r == srcImg[0].r && destImg[(y * w) + x].g == srcImg[0].g && destImg[(y * w) + x].b == srcImg[0].b)
                                         {
-                                            destImg[(y * srcTex.width) + x] = Color.clear;
+                                            destImg[(y * w) + x].a = 0;
                                         }
                                     }
                                 }
@@ -247,6 +233,9 @@ public class Accordingly : MonoBehaviour
                                 destTex.Apply();
                                 byte[] destBytes = destTex.EncodeToPNG();
                                 File.WriteAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png", destBytes);
+                                srcTex.filterMode = FilterMode.Point;
+                                srcTex2.filterMode = FilterMode.Point;
+                                destTex.filterMode = FilterMode.Point;
                                 ri.texture = destTex;
                                 ri.SizeToParent(0);
                             }
@@ -279,50 +268,40 @@ public class Accordingly : MonoBehaviour
                         Debug.Log(output);
 
                        
-                        if (File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"))
+                        if (File.Exists(view[v].FullName) && File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"))
                         {
 
                             srcTex.LoadImage(File.ReadAllBytes(view[v].FullName));
                             srcTex.Apply();
+                            srcImg = new Color32[srcTex.width * srcTex.height];
                             srcImg = srcTex.GetPixels32();
-                            destTex.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"));
-                            destTex.Apply();
-                            destImg = destTex.GetPixels32();
-                            int w = 0;
-                            int h = 0;
-                            if (srcTex.width > destTex.width)
-                            {
-                                w = srcTex.width;
-                            }
-                            else
-                            {
-                                w = destTex.width;
-                            }
-                            if (srcTex.height > destTex.height)
-                            {
-                                h = srcTex.height;
-                            }
-                            else
-                            {
-                                h = destTex.height;
-                            }
-                            destTex = new Texture2D(w, h);
+                            srcTex2.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"));
+                            srcTex2.Apply();
+                            srcImg2 = new Color32[srcTex2.width * srcTex2.height];
+                            srcImg2 = srcTex2.GetPixels32();
+                            int w = srcTex2.width;
+                            int h = srcTex2.height;
+
+                            destTex = new Texture2D(w, h, TextureFormat.ARGB32, false);
+                            destImg = new Color32[w * h];
+
                             for (int y = 0; y < h; y++)
                             {
                                 for (int x = 0; x < w; x++)
                                 {
-                                    destImg[(y * srcTex.width) + x] = Color.clear;
+                                    destImg[(y * w) + x] = Color.clear;
+                                    destImg[(y * w) + x].a = 0;
                                 }
                             }
-                            Color clear = srcImg[0];
+
                             for (int y = 0; y < h; y++)
                             {
                                 for (int x = 0; x < w; x++)
                                 {
-                                    destImg[(y * srcTex.width) + x] = srcImg[GetClosestColor(srcImg, destImg[(y * srcTex.width) + x])];
-                                    if (destImg[(y * srcTex.width) + x] == clear)
+                                    destImg[(y * w) + x] = srcImg[GetClosestColor(srcImg, srcTex2.GetPixel(x, y))];
+                                    if (destImg[(y * w) + x].r == srcImg[0].r && destImg[(y * w) + x].g == srcImg[0].g && destImg[(y * w) + x].b == srcImg[0].b)
                                     {
-                                        destImg[(y * srcTex.width) + x] = Color.clear;
+                                        destImg[(y * w) + x].a = 0;
                                     }
                                 }
                             }
@@ -330,55 +309,48 @@ public class Accordingly : MonoBehaviour
                             destTex.Apply();
                             byte[] destBytes = destTex.EncodeToPNG();
                             File.WriteAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png", destBytes);
+                            srcTex.filterMode = FilterMode.Point;
+                            srcTex2.filterMode = FilterMode.Point;
+                            destTex.filterMode = FilterMode.Point; 
                             ri.texture = destTex;
                             ri.SizeToParent(0);
                         }
                         else
                         {
                             
-                            if (File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"))
+                            if (File.Exists(view[v].FullName) && File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"))
                             {
                                 srcTex.LoadImage(File.ReadAllBytes(view[v].FullName));
                                 srcTex.Apply();
+                                srcImg = new Color32[srcTex.width * srcTex.height];
                                 srcImg = srcTex.GetPixels32();
-                                destTex.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"));
-                                destTex.Apply();
-                                destImg = destTex.GetPixels32();
-                                int w = 0;
-                                int h = 0;
-                                if (srcTex.width > destTex.width)
-                                {
-                                    w = srcTex.width;
-                                }
-                                else
-                                {
-                                    w = destTex.width;
-                                }
-                                if (srcTex.height > destTex.height)
-                                {
-                                    h = srcTex.height;
-                                }
-                                else
-                                {
-                                    h = destTex.height;
-                                }
-                                destTex = new Texture2D(w, h);
+                                srcTex2.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"));
+                                srcTex2.Apply();
+                                srcImg2 = new Color32[srcTex2.width * srcTex2.height];
+                                srcImg2 = srcTex2.GetPixels32();
+                                int w = srcTex2.width;
+                                int h = srcTex2.height;
+
+                                destTex = new Texture2D(w, h, TextureFormat.ARGB32, false);
+                                destImg = new Color32[w * h];
+
                                 for (int y = 0; y < h; y++)
                                 {
                                     for (int x = 0; x < w; x++)
                                     {
-                                        destImg[(y * srcTex.width) + x] = Color.clear;
+                                        destImg[(y * w) + x] = Color.clear;
+                                        destImg[(y * w) + x].a = 0;
                                     }
                                 }
-                                Color clear = srcImg[0];
+                                
                                 for (int y = 0; y < h; y++)
                                 {
                                     for (int x = 0; x < w; x++)
                                     {
-                                        destImg[(y * srcTex.width) + x] = srcImg[GetClosestColor(srcImg, destImg[(y * srcTex.width) + x])];
-                                        if (destImg[(y * srcTex.width) + x] == clear)
+                                        destImg[(y * w) + x] = srcImg[GetClosestColor(srcImg, srcTex2.GetPixel(x, y))];
+                                        if (destImg[(y * w) + x].r == srcImg[0].r && destImg[(y * w) + x].g == srcImg[0].g && destImg[(y * w) + x].b == srcImg[0].b)
                                         {
-                                            destImg[(y * srcTex.width) + x] = Color.clear;
+                                            destImg[(y * w) + x].a = 0;
                                         }
                                     }
                                 }
@@ -386,6 +358,9 @@ public class Accordingly : MonoBehaviour
                                 destTex.Apply();
                                 byte[] destBytes = destTex.EncodeToPNG();
                                 File.WriteAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png", destBytes);
+                                srcTex.filterMode = FilterMode.Point;
+                                srcTex2.filterMode = FilterMode.Point;
+                                destTex.filterMode = FilterMode.Point;
                                 ri.texture = destTex;
                                 ri.SizeToParent(0);
                             }
@@ -467,5 +442,6 @@ public class Accordingly : MonoBehaviour
     {
         ri.texture = destTex;
         ri.SizeToParent(0);
+        
     }
 }

@@ -175,12 +175,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dirPath: 
   ri: {fileID: 335890844}
-  srcTex: {fileID: 0}
-  srcTex256: {fileID: 0}
-  destTex: {fileID: 0}
-  srcImg: []
-  srcImg256: []
+  srcTex: {fileID: 2800000, guid: 16be20f6fdb0c0d42968eeba1b6b60e4, type: 3}
+  srcTex2: {fileID: 2800000, guid: 3f2322ed43b26e247891281871e0a946, type: 3}
+  destTex: {fileID: 2800000, guid: 9ff5405185def6c489f095078347cacb, type: 3}
+  srcImg2: []
   destImg: []
+  originalColors: []
   allPNGs: []
   tempColor:
     serializedVersion: 2
@@ -270,7 +270,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 2100000, guid: 54412c050f947904382c6ba94e4a6ed6, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -329,7 +329,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0, g: 1, b: 1, a: 0}
+  m_BackGroundColor: {r: 0, g: 1, b: 0, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0

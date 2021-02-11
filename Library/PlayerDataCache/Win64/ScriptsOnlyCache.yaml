@@ -50,21 +50,21 @@ ScriptsOnlyBuild:
     - Class: 104
       Script: {instanceID: 0}
     - Class: 114
-      Script: {instanceID: 1490}
+      Script: {instanceID: 1488}
     - Class: 114
-      Script: {instanceID: 2070}
+      Script: {instanceID: 2068}
     - Class: 114
-      Script: {instanceID: 2220}
+      Script: {instanceID: 2218}
     - Class: 114
-      Script: {instanceID: 2432}
+      Script: {instanceID: 2430}
     - Class: 114
-      Script: {instanceID: 2574}
+      Script: {instanceID: 2572}
     - Class: 114
-      Script: {instanceID: 2578}
+      Script: {instanceID: 2576}
     - Class: 114
-      Script: {instanceID: 2748}
+      Script: {instanceID: 2746}
     - Class: 114
-      Script: {instanceID: 2952}
+      Script: {instanceID: 2950}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
@@ -222,7 +222,7 @@ ScriptsOnlyBuild:
     className: AspectRatioFitter
   - hash:
       serializedVersion: 2
-      Hash: d73a65f2df4a7827fdc7a3e4c46d5d08
+      Hash: 896210e9e5bb048e4e2fe4820cdf4383
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
     className: Accordingly
