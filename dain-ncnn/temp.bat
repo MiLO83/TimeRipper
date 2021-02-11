@@ -1,0 +1,1 @@
+C:/Projects/AlphaCentauri/Assets/../dain-ncnn/dain-ncnn-vulkan.exe -i C:/Projects/AlphaCentauri/Assets/../Output/0.0/ -o C:/Projects/AlphaCentauri/Assets/../Output/0.0/Tween/ -s 0.25 -f png -v
