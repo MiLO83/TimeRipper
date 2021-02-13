@@ -44,22 +44,25 @@ public class Accordingly : MonoBehaviour
     public Texture2D srcTex;
     public Texture2D srcTex2;
     public Texture2D destTex;
-    public static Color32[] srcImg;
-    public Color32[] srcImg2;
-    public Color32[] destImg;
-    public Color32[] originalColors;
+    public Texture2D destTex2;
+    public static Color[] srcImg;
+    public Color[] srcImg2;
+    public Color[] destImg;
+    public Color[] originalColors;
     public string[] allPNGs;
-    public Color32 tempColor;
+    public Color tempColor;
+
     public List<int> foundViewNumbers = new List<int>();
     // Start is called before the first frame update
     void Start()
     {
         destTex = new Texture2D(32, 32, TextureFormat.ARGB32, false);
+        destTex2 = new Texture2D(32, 32, TextureFormat.ARGB32, false);
         srcTex = new Texture2D(32, 32, TextureFormat.ARGB32, false);
         srcTex2 = new Texture2D(32, 32, TextureFormat.ARGB32, false);
         StartCoroutine(ProcessBatch());
     }
-    private static int GetClosestColor(Color32[] colorArray, Color32 baseColor)
+    private static int GetClosestColor(Color[] colorArray, Color baseColor)
     {
         var colors = colorArray.Select(x => new { Value = x, Diff = GetDiff(x, baseColor) }).ToList();
         var min = colors.Min(x => x.Diff);
@@ -85,9 +88,9 @@ public class Accordingly : MonoBehaviour
         }
     }
 
-    private static float GetDiff(Color32 color, Color32 baseColor)
+    private static float GetDiff(Color color, Color baseColor)
     {
-        int a = color.a - baseColor.a,
+        float a = color.a - baseColor.a,
             r = color.r - baseColor.r,
             g = color.g - baseColor.g,
             b = color.b - baseColor.b;
@@ -99,37 +102,42 @@ public class Accordingly : MonoBehaviour
         srcTex.filterMode = FilterMode.Point;
         srcTex2.filterMode = FilterMode.Point;
         destTex.filterMode = FilterMode.Point;
-        tempColor = new Color32(255, 255, 255, 255);
-
+        destTex2.filterMode = FilterMode.Point;
+        tempColor = new Color(1, 1, 1, 1);
+        ri.texture = destTex;
         DirectoryInfo di = new DirectoryInfo(Application.dataPath + "/../Input/");
         Directory.CreateDirectory(Application.dataPath + "/../Output/");
         Debug.Log("Looking for Images in : " + di.FullName);
-        FileInfo[] files = di.GetFiles("view*.png", SearchOption.TopDirectoryOnly);
+        FileInfo[] files = di.GetFiles("view*.orig.png", SearchOption.TopDirectoryOnly);
         List<FileInfo> view = new List<FileInfo>();
         int f = 0;
-        while (f < files.Length-1)
+        while (f < files.Length - 1)
         {
 
-            while (f < files.Length-1 && files[f] != null && files[f + 1] != null && files[f].Name.Split('.')[1] != null && files[f + 1].Name.Split('.')[1] != null && files[f].Name.Split('.')[1] == files[f + 1].Name.Split('.')[1] && files[f].Name.Split('.')[2] != null && files[f + 1].Name.Split('.')[2] != null)
+            while (f < files.Length - 1 && files[f] != null && files[f + 1] != null && files[f].Name.Split('.')[1] != null && files[f + 1].Name.Split('.')[1] != null && files[f].Name.Split('.')[1] == files[f + 1].Name.Split('.')[1] && files[f].Name.Split('.')[2] != null && files[f + 1].Name.Split('.')[2] != null)
             {
                 Debug.Log("Found File : " + files[f].Name);
                 view.Add(files[f]);
                 f++;
             }
-        
+
             dirPath = "";
             for (int v = 0; v < view.Count - 1; v++)
             {
                 if (view[v + 1] != null && view[v].Name.Split('.')[1] == view[v + 1].Name.Split('.')[1] && view[v].Name.Split('.')[2] == view[v + 1].Name.Split('.')[2])
                 {
-                                        
-                        for (int t = 0; t < 4; t++)
+                    for (int t = 1; t < 4; t++)
+                    {
+
+                        if (!File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".png"))
                         {
+                            ri.texture = destTex2;
+                            ri.SizeToParent(0);
                             yield return new WaitForSeconds(0.1f);
-                            string fileName = "-0 " + view[v].FullName + " -1 " + view[v + 1].FullName + " -o " + Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png" + " -s " + (t * 0.25) + " -v";
+                            string fileName = "-0 " + Application.dataPath + "/../Input/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".Canvas.png" + " -1 " + Application.dataPath + "/../Input/view." + view[v + 1].Name.Split('.')[1] + "." + view[v + 1].Name.Split('.')[2] + "." + view[v + 1].Name.Split('.')[3] + ".Canvas.png" + " -o " + Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png" + " -s " + ((t * 0.25)) + " -v";
                             Process p = new Process();
                             Debug.Log("RUNNING : " + Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe");
-                            Debug.Log("Command Arguments : " + fileName);
+                            Debug.Log("Command Arguments : " + Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe" + fileName);
                             p.StartInfo = new ProcessStartInfo(Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe", fileName)
                             {
                                 WorkingDirectory = Application.dataPath + "/../dain-ncnn/",
@@ -143,232 +151,174 @@ public class Accordingly : MonoBehaviour
                             p.WaitForExit();
 
                             Debug.Log(output);
-                        
-                        if (File.Exists(view[v].FullName) && File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"))
-                        {
+                            while (!File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"))
+                            {
+                                Debug.Log("Waiting for File...");
+                                yield return new WaitForSeconds(10.2f);
+                            }
+
 
                             srcTex.LoadImage(File.ReadAllBytes(view[v].FullName));
                             srcTex.Apply();
-                            srcImg = new Color32[srcTex.width * srcTex.height];
-                            srcImg = srcTex.GetPixels32();
+                            int orig_width = srcTex.width;
+                            int orig_height = srcTex.height;
+                            srcTex.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Input/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".Canvas.png"));
+                            srcTex.Apply();
+                            srcImg = new Color[srcTex.width * srcTex.height];
+                            srcImg = srcTex.GetPixels();
                             srcTex2.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"));
                             srcTex2.Apply();
-                            srcImg2 = new Color32[srcTex2.width * srcTex2.height];
-                            srcImg2 = srcTex2.GetPixels32();
+                            srcImg2 = new Color[srcTex2.width * srcTex2.height];
+                            srcImg2 = srcTex2.GetPixels();
                             int w = srcTex2.width;
                             int h = srcTex2.height;
-
-                            destTex = new Texture2D(w, h, TextureFormat.ARGB32, false);
-                            destImg = new Color32[w * h];
-
-                            for (int y = 0; y < h; y++)
-                            {
-                                for (int x = 0; x < w; x++)
-                                {
-                                    destImg[(y * w) + x] = Color.clear;
-                                    destImg[(y * w) + x].a = 0;
-                                }
-                            }
-
-                            for (int y = 0; y < h; y++)
-                            {
-                                for (int x = 0; x < w; x++)
-                                {
-                                    destImg[(y * w) + x] = srcImg[GetClosestColor(srcImg, srcTex2.GetPixel(x, y))];
-                                    if (destImg[(y * w) + x].r == srcImg[0].r && destImg[(y * w) + x].g == srcImg[0].g && destImg[(y * w) + x].b == srcImg[0].b)
-                                    {
-                                        destImg[(y * w) + x].a = 0;
-                                    }
-                                }
-                            }
-                            destTex.SetPixels32(destImg);
-                            destTex.Apply();
-                            byte[] destBytes = destTex.EncodeToPNG();
-                            File.WriteAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png", destBytes);
-                            srcTex.filterMode = FilterMode.Point;
-                            srcTex2.filterMode = FilterMode.Point;
-                            destTex.filterMode = FilterMode.Point;
-                            ri.texture = destTex;
+                            ri.texture = destTex2;
                             ri.SizeToParent(0);
-                        } else
-                        {
-                            
-                            if (File.Exists(view[v].FullName) && File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"))
+                            destTex = new Texture2D(orig_width, orig_height, TextureFormat.ARGB32, false);
+                            destImg = new Color[orig_width * orig_height];
+                            if (orig_width <= srcTex2.width && orig_height <= srcTex2.height)
                             {
-                                srcTex.LoadImage(File.ReadAllBytes(view[v].FullName));
-                                srcTex.Apply();
-                                srcImg = new Color32[srcTex.width * srcTex.height];
-                                srcImg = srcTex.GetPixels32();
-                                srcTex2.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"));
-                                srcTex2.Apply();
-                                srcImg2 = new Color32[srcTex2.width * srcTex2.height];
-                                srcImg2 = srcTex2.GetPixels32();
-                                int w = srcTex2.width;
-                                int h = srcTex2.height;
+                                destImg = srcTex2.GetPixels((srcTex2.width / 2) - (orig_width / 2), (srcTex2.height / 2) - (orig_height / 2), orig_width, orig_height);
 
-                                destTex = new Texture2D(w, h, TextureFormat.ARGB32, false);
-                                destImg = new Color32[w * h];
-
-                                for (int y = 0; y < h; y++)
+                                for (int y2 = 0; y2 < orig_height; y2++)
                                 {
-                                    for (int x = 0; x < w; x++)
+                                    for (int x2 = 0; x2 < orig_width; x2++)
                                     {
-                                        destImg[(y * w) + x] = Color.clear;
-                                        destImg[(y * w) + x].a = 0;
-                                    }
-                                }
-
-                                for (int y = 0; y < h; y++)
-                                {
-                                    for (int x = 0; x < w; x++)
-                                    {
-                                        destImg[(y * w) + x] = srcImg[GetClosestColor(srcImg, srcTex2.GetPixel(x, y))];
-                                        if (destImg[(y * w) + x].r == srcImg[0].r && destImg[(y * w) + x].g == srcImg[0].g && destImg[(y * w) + x].b == srcImg[0].b)
+                                        if (((y2 * orig_width) + x2) < orig_width * orig_height)
                                         {
-                                            destImg[(y * w) + x].a = 0;
+
+                                            if (Math.Abs(destImg[(y2 * orig_width) + x2].r - srcImg2[0].r) < 0.2575f && Math.Abs(destImg[(y2 * orig_width) + x2].g - srcImg2[0].g) < 0.2575f && Math.Abs(destImg[(y2 * orig_width) + x2].b - srcImg2[0].b) < 0.2575f)
+                                            {
+                                                destImg[(y2 * orig_width) + x2] = srcImg2[0];
+                                            }
+
+                                            destImg[(y2 * orig_width) + x2] = srcImg[GetClosestColor(srcImg, destImg[(y2 * orig_width) + x2])];
+                                            if (destImg[(y2 * orig_width) + x2] == srcImg2[0])
+                                            {
+                                                destImg[(y2 * orig_width) + x2].a = 0;
+                                            }
+
                                         }
                                     }
                                 }
-                                destTex.SetPixels32(destImg);
+                                destTex.SetPixels(destImg);
                                 destTex.Apply();
                                 byte[] destBytes = destTex.EncodeToPNG();
-                                File.WriteAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png", destBytes);
+                                File.WriteAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".png", destBytes);
+                                destTex2 = new Texture2D(orig_width, orig_height, TextureFormat.ARGB32, false);
+                                destTex2.SetPixels(destTex.GetPixels());
+                                destTex2.Apply();
+                                ri.texture = destTex2;
+                                ri.SizeToParent(0);
                                 srcTex.filterMode = FilterMode.Point;
                                 srcTex2.filterMode = FilterMode.Point;
                                 destTex.filterMode = FilterMode.Point;
-                                ri.texture = destTex;
-                                ri.SizeToParent(0);
+                                destTex2.filterMode = FilterMode.Point;
+                                File.Delete(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png");
                             }
+
                         }
+
                     }
                     
                 }
-                if (view[v + 1] == null && view[v].Name.Split('.')[1] == view[0].Name.Split('.')[1] && view[v].Name.Split('.')[2] == view[0].Name.Split('.')[2])
-                {
-
-                    for (int t = 0; t < 4; t++)
+                if (v == view.Count - 2)
+                    if (view[v] == null && view[v + 1] == null && view[v].Name.Split('.')[1] == view[0].Name.Split('.')[1] && view[v].Name.Split('.')[2] == view[0].Name.Split('.')[2])
                     {
-                        
-                        string fileName = "-0 " + view[v].FullName + " -1 " + view[0].FullName + " -o " + Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png" + " -s " + (t * 0.25) + " -v";
-                        Process p = new Process();
-                        Debug.Log("RUNNING : " + Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe");
-                        Debug.Log("Command Arguments : " + fileName);
-                        p.StartInfo = new ProcessStartInfo(Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe", fileName)
+                        for (int t = 1; t < 4; t++)
                         {
-                            WorkingDirectory = Application.dataPath + "/../dain-ncnn/",
-                            RedirectStandardOutput = true,
-                            UseShellExecute = false,
-                            CreateNoWindow = true
-                        };
-                        p.Start();
-
-                        string output = p.StandardOutput.ReadToEnd();
-                        p.WaitForExit();
-
-                        Debug.Log(output);
-
-                       
-                        if (File.Exists(view[v].FullName) && File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"))
-                        {
-
-                            srcTex.LoadImage(File.ReadAllBytes(view[v].FullName));
-                            srcTex.Apply();
-                            srcImg = new Color32[srcTex.width * srcTex.height];
-                            srcImg = srcTex.GetPixels32();
-                            srcTex2.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"));
-                            srcTex2.Apply();
-                            srcImg2 = new Color32[srcTex2.width * srcTex2.height];
-                            srcImg2 = srcTex2.GetPixels32();
-                            int w = srcTex2.width;
-                            int h = srcTex2.height;
-
-                            destTex = new Texture2D(w, h, TextureFormat.ARGB32, false);
-                            destImg = new Color32[w * h];
-
-                            for (int y = 0; y < h; y++)
+                            if (!File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".png"))
                             {
-                                for (int x = 0; x < w; x++)
+                                ri.texture = destTex2;
+                                ri.SizeToParent(0);
+
+
+                                string fileName = "-0 " + Application.dataPath + "/../Input/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".Canvas.png" + " -1 " + Application.dataPath + "/../Input/view." + view[0].Name.Split('.')[1] + "." + view[0].Name.Split('.')[2] + "." + view[0].Name.Split('.')[3] + ".Canvas.png" + " -o " + Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png" + " -s " + ((t * 0.25)) + " -v";
+                                Process p = new Process();
+                                Debug.Log("RUNNING : " + Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe");
+                                Debug.Log("Command Arguments : " + Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe" + fileName);
+                                p.StartInfo = new ProcessStartInfo(Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe", fileName)
                                 {
-                                    destImg[(y * w) + x] = Color.clear;
-                                    destImg[(y * w) + x].a = 0;
-                                }
-                            }
+                                    WorkingDirectory = Application.dataPath + "/../dain-ncnn/",
+                                    RedirectStandardOutput = true,
+                                    UseShellExecute = false,
+                                    CreateNoWindow = true
+                                };
+                                p.Start();
 
-                            for (int y = 0; y < h; y++)
-                            {
-                                for (int x = 0; x < w; x++)
+                                string output = p.StandardOutput.ReadToEnd();
+                                p.WaitForExit();
+
+                                Debug.Log(output);
+
+                                while (!File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"))
                                 {
-                                    destImg[(y * w) + x] = srcImg[GetClosestColor(srcImg, srcTex2.GetPixel(x, y))];
-                                    if (destImg[(y * w) + x].r == srcImg[0].r && destImg[(y * w) + x].g == srcImg[0].g && destImg[(y * w) + x].b == srcImg[0].b)
-                                    {
-                                        destImg[(y * w) + x].a = 0;
-                                    }
+                                    Debug.Log("Waiting for File...");
+                                    yield return new WaitForSeconds(10.2f);
                                 }
-                            }
-                            destTex.SetPixels32(destImg);
-                            destTex.Apply();
-                            byte[] destBytes = destTex.EncodeToPNG();
-                            File.WriteAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png", destBytes);
-                            srcTex.filterMode = FilterMode.Point;
-                            srcTex2.filterMode = FilterMode.Point;
-                            destTex.filterMode = FilterMode.Point; 
-                            ri.texture = destTex;
-                            ri.SizeToParent(0);
-                        }
-                        else
-                        {
-                            
-                            if (File.Exists(view[v].FullName) && File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"))
-                            {
+
+
                                 srcTex.LoadImage(File.ReadAllBytes(view[v].FullName));
                                 srcTex.Apply();
-                                srcImg = new Color32[srcTex.width * srcTex.height];
-                                srcImg = srcTex.GetPixels32();
+                                int orig_width = srcTex.width;
+                                int orig_height = srcTex.height;
+                                srcTex.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Input/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".Canvas.png"));
+                                srcImg = new Color[srcTex.width * srcTex.height];
+                                srcImg = srcTex.GetPixels();
                                 srcTex2.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"));
                                 srcTex2.Apply();
-                                srcImg2 = new Color32[srcTex2.width * srcTex2.height];
-                                srcImg2 = srcTex2.GetPixels32();
+                                srcImg2 = new Color[srcTex2.width * srcTex2.height];
+                                srcImg2 = srcTex2.GetPixels();
                                 int w = srcTex2.width;
                                 int h = srcTex2.height;
-
-                                destTex = new Texture2D(w, h, TextureFormat.ARGB32, false);
-                                destImg = new Color32[w * h];
-
-                                for (int y = 0; y < h; y++)
+                                ri.texture = destTex2;
+                                ri.SizeToParent(0);
+                                destTex = new Texture2D(orig_width, orig_height, TextureFormat.ARGB32, false);
+                                destImg = new Color[orig_width * orig_height];
+                                if (orig_width <= srcTex2.width && orig_height <= srcTex2.height)
                                 {
-                                    for (int x = 0; x < w; x++)
+                                    destImg = srcTex2.GetPixels((srcTex2.width / 2) - (orig_width / 2), (srcTex2.height / 2) - (orig_height / 2), orig_width, orig_height);
+
+                                    for (int y2 = 0; y2 < orig_height; y2++)
                                     {
-                                        destImg[(y * w) + x] = Color.clear;
-                                        destImg[(y * w) + x].a = 0;
-                                    }
-                                }
-                                
-                                for (int y = 0; y < h; y++)
-                                {
-                                    for (int x = 0; x < w; x++)
-                                    {
-                                        destImg[(y * w) + x] = srcImg[GetClosestColor(srcImg, srcTex2.GetPixel(x, y))];
-                                        if (destImg[(y * w) + x].r == srcImg[0].r && destImg[(y * w) + x].g == srcImg[0].g && destImg[(y * w) + x].b == srcImg[0].b)
+                                        for (int x2 = 0; x2 < orig_width; x2++)
                                         {
-                                            destImg[(y * w) + x].a = 0;
+                                            if (((y2 * orig_width) + x2) < orig_width * orig_height)
+                                            {
+                                                if (Math.Abs(destImg[(y2 * orig_width) + x2].r - srcImg2[0].r) < 0.2575f && Math.Abs(destImg[(y2 * orig_width) + x2].g - srcImg2[0].g) < 0.2575f && Math.Abs(destImg[(y2 * orig_width) + x2].b - srcImg2[0].b) < 0.2575f)
+                                                {
+                                                    destImg[(y2 * orig_width) + x2] = srcImg2[0];
+                                                }
+
+                                                destImg[(y2 * orig_width) + x2] = srcImg[GetClosestColor(srcImg, destImg[(y2 * orig_width) + x2])];
+                                                if (destImg[(y2 * orig_width) + x2] == srcImg2[0])
+                                                {
+                                                    destImg[(y2 * orig_width) + x2].a = 0;
+                                                }
+
+                                            }
                                         }
                                     }
+                                    destTex.SetPixels(destImg);
+                                    destTex.Apply();
+                                    byte[] destBytes = destTex.EncodeToPNG();
+                                    File.WriteAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".png", destBytes);
+                                    destTex2 = new Texture2D(orig_width, orig_height, TextureFormat.ARGB32, false);
+                                    destTex2.SetPixels(destTex.GetPixels());
+                                    destTex2.Apply();
+                                    ri.texture = destTex2;
+                                    ri.SizeToParent(0);
+                                    srcTex.filterMode = FilterMode.Point;
+                                    srcTex2.filterMode = FilterMode.Point;
+                                    destTex.filterMode = FilterMode.Point;
+                                    destTex2.filterMode = FilterMode.Point;
+                                    File.Delete(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png");
+
                                 }
-                                destTex.SetPixels32(destImg);
-                                destTex.Apply();
-                                byte[] destBytes = destTex.EncodeToPNG();
-                                File.WriteAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png", destBytes);
-                                srcTex.filterMode = FilterMode.Point;
-                                srcTex2.filterMode = FilterMode.Point;
-                                destTex.filterMode = FilterMode.Point;
-                                ri.texture = destTex;
-                                ri.SizeToParent(0);
                             }
+                        
                         }
                     }
-
-                }
-                
 
             }
             view.Clear();
@@ -398,16 +348,16 @@ public class Accordingly : MonoBehaviour
             srcTex256.LoadImage(File.ReadAllBytes(di.FullName + "/pic." + vstr.ToString() + "_256.png"));
             srcTex256.Apply();
             destTex = new Texture2D(srcTex.width, srcTex.height);
-            destImg = new Color32[srcTex.width * srcTex.height];
-            srcImg = srcTex.GetPixels32();
-            srcImg256 = srcTex256.GetPixels32();
+            destImg = new Color[srcTex.width * srcTex.height];
+            srcImg = srcTex.GetPixels();
+            srcImg256 = srcTex256.GetPixels();
 
             if (File.Exists(di.FullName + "/pic." + vstr.ToString() + ".png"))
             {
                 Debug.Log("FOUND : " + di.FullName + "/pic." + vstr.ToString() + ".png");
 
                 destTex = new Texture2D(srcTex.width, srcTex.height);
-                destImg = new Color32[srcTex.width * srcTex.height];
+                destImg = new Color[srcTex.width * srcTex.height];
                 for (int y = 0; y < srcTex.height; y++)
                 {
                     for (int x = 0; x < srcTex.width; x++)
@@ -440,7 +390,10 @@ public class Accordingly : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        ri.texture = destTex;
+        srcTex.filterMode = FilterMode.Point;
+        srcTex2.filterMode = FilterMode.Point;
+        destTex.filterMode = FilterMode.Point;
+        destTex2.filterMode = FilterMode.Point;
         ri.SizeToParent(0);
         
     }
