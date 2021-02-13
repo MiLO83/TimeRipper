@@ -108,7 +108,7 @@ public class Accordingly : MonoBehaviour
         DirectoryInfo di = new DirectoryInfo(Application.dataPath + "/../Input/");
         Directory.CreateDirectory(Application.dataPath + "/../Output/");
         Debug.Log("Looking for Images in : " + di.FullName);
-        FileInfo[] files = di.GetFiles("view*.orig.png", SearchOption.TopDirectoryOnly);
+        FileInfo[] files = di.GetFiles("view*.Original.png", SearchOption.TopDirectoryOnly);
         List<FileInfo> view = new List<FileInfo>();
         int f = 0;
         while (f < files.Length - 1)
