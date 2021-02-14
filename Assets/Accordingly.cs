@@ -7,7 +7,7 @@ using System.IO;
 using System.Diagnostics;
 using Debug = UnityEngine.Debug;
 using System.Linq;
-static class CanvasExtensions
+static class squaredExtensions
 {
     public static Vector2 SizeToParent(this RawImage image, float padding = 0)
     {
@@ -42,6 +42,7 @@ public class Accordingly : MonoBehaviour
     public string dirPath = "";
     public RawImage ri;
     public Texture2D srcTex;
+    public Texture2D srcTexA;
     public Texture2D srcTex2;
     public Texture2D destTex;
     public Texture2D destTex2;
@@ -59,6 +60,7 @@ public class Accordingly : MonoBehaviour
         destTex = new Texture2D(32, 32, TextureFormat.ARGB32, false);
         destTex2 = new Texture2D(32, 32, TextureFormat.ARGB32, false);
         srcTex = new Texture2D(32, 32, TextureFormat.ARGB32, false);
+        srcTexA = new Texture2D(32, 32, TextureFormat.ARGB32, false);
         srcTex2 = new Texture2D(32, 32, TextureFormat.ARGB32, false);
         StartCoroutine(ProcessBatch());
     }
@@ -108,7 +110,7 @@ public class Accordingly : MonoBehaviour
         DirectoryInfo di = new DirectoryInfo(Application.dataPath + "/../Input/");
         Directory.CreateDirectory(Application.dataPath + "/../Output/");
         Debug.Log("Looking for Images in : " + di.FullName);
-        FileInfo[] files = di.GetFiles("view*.Original.png", SearchOption.TopDirectoryOnly);
+        FileInfo[] files = di.GetFiles("view.*.original.png", SearchOption.TopDirectoryOnly);
         List<FileInfo> view = new List<FileInfo>();
         int f = 0;
         while (f < files.Length - 1)
@@ -134,10 +136,10 @@ public class Accordingly : MonoBehaviour
                             ri.texture = destTex2;
                             ri.SizeToParent(0);
                             yield return new WaitForSeconds(0.1f);
-                            string fileName = "-0 " + Application.dataPath + "/../Input/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".Canvas.png" + " -1 " + Application.dataPath + "/../Input/view." + view[v + 1].Name.Split('.')[1] + "." + view[v + 1].Name.Split('.')[2] + "." + view[v + 1].Name.Split('.')[3] + ".Canvas.png" + " -o " + Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png" + " -s " + ((t * 0.25)) + " -v";
+                            string fileName = "-0 " + Application.dataPath + "/../Input/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".squared.png" + " -1 " + Application.dataPath + "/../Input/view." + view[v + 1].Name.Split('.')[1] + "." + view[v + 1].Name.Split('.')[2] + "." + view[v + 1].Name.Split('.')[3] + ".squared.png" + " -o " + Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png" + " -s " + ((t * 0.25)) + " -v";
                             Process p = new Process();
                             Debug.Log("RUNNING : " + Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe");
-                            Debug.Log("Command Arguments : " + Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe" + fileName);
+                            Debug.Log("Command Arguments : " + Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe " + fileName);
                             p.StartInfo = new ProcessStartInfo(Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe", fileName)
                             {
                                 WorkingDirectory = Application.dataPath + "/../dain-ncnn/",
@@ -151,23 +153,32 @@ public class Accordingly : MonoBehaviour
                             p.WaitForExit();
 
                             Debug.Log(output);
+                            yield return new WaitForEndOfFrame();
                             while (!File.Exists(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"))
                             {
                                 Debug.Log("Waiting for File...");
                                 yield return new WaitForSeconds(10.2f);
                             }
+                            yield return new WaitForEndOfFrame();
 
-
-                            srcTex.LoadImage(File.ReadAllBytes(view[v].FullName));
+                            srcTexA.LoadImage(File.ReadAllBytes(view[v].FullName));
+                            yield return new WaitForEndOfFrame();
+                            srcTexA.Apply();
+                            yield return new WaitForEndOfFrame();
+                            int orig_width = srcTexA.width + 0;
+                            int orig_height = srcTexA.height + 0;
+                            yield return new WaitForEndOfFrame();
+                            srcTex.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Input/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".squared.png"));
+                            yield return new WaitForEndOfFrame(); 
                             srcTex.Apply();
-                            int orig_width = srcTex.width;
-                            int orig_height = srcTex.height;
-                            srcTex.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Input/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".Canvas.png"));
-                            srcTex.Apply();
+                            yield return new WaitForEndOfFrame();
                             srcImg = new Color[srcTex.width * srcTex.height];
                             srcImg = srcTex.GetPixels();
+                            yield return new WaitForEndOfFrame();
                             srcTex2.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"));
+                            yield return new WaitForEndOfFrame();
                             srcTex2.Apply();
+                            yield return new WaitForEndOfFrame();
                             srcImg2 = new Color[srcTex2.width * srcTex2.height];
                             srcImg2 = srcTex2.GetPixels();
                             int w = srcTex2.width;
@@ -176,6 +187,7 @@ public class Accordingly : MonoBehaviour
                             ri.SizeToParent(0);
                             destTex = new Texture2D(orig_width, orig_height, TextureFormat.ARGB32, false);
                             destImg = new Color[orig_width * orig_height];
+                            yield return new WaitForEndOfFrame();
                             if (orig_width <= srcTex2.width && orig_height <= srcTex2.height)
                             {
                                 destImg = srcTex2.GetPixels((srcTex2.width / 2) - (orig_width / 2), (srcTex2.height / 2) - (orig_height / 2), orig_width, orig_height);
@@ -201,19 +213,24 @@ public class Accordingly : MonoBehaviour
                                         }
                                     }
                                 }
+                                yield return new WaitForEndOfFrame();
                                 destTex.SetPixels(destImg);
                                 destTex.Apply();
+                                yield return new WaitForEndOfFrame();
                                 byte[] destBytes = destTex.EncodeToPNG();
                                 File.WriteAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".png", destBytes);
+                                yield return new WaitForEndOfFrame();
                                 destTex2 = new Texture2D(orig_width, orig_height, TextureFormat.ARGB32, false);
                                 destTex2.SetPixels(destTex.GetPixels());
                                 destTex2.Apply();
+                                yield return new WaitForEndOfFrame();
                                 ri.texture = destTex2;
                                 ri.SizeToParent(0);
                                 srcTex.filterMode = FilterMode.Point;
                                 srcTex2.filterMode = FilterMode.Point;
                                 destTex.filterMode = FilterMode.Point;
                                 destTex2.filterMode = FilterMode.Point;
+                                yield return new WaitForEndOfFrame();
                                 File.Delete(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png");
                             }
 
@@ -233,10 +250,10 @@ public class Accordingly : MonoBehaviour
                                 ri.SizeToParent(0);
 
 
-                                string fileName = "-0 " + Application.dataPath + "/../Input/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".Canvas.png" + " -1 " + Application.dataPath + "/../Input/view." + view[0].Name.Split('.')[1] + "." + view[0].Name.Split('.')[2] + "." + view[0].Name.Split('.')[3] + ".Canvas.png" + " -o " + Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png" + " -s " + ((t * 0.25)) + " -v";
+                                string fileName = "-0 " + Application.dataPath + "/../Input/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".squared.png" + " -1 " + Application.dataPath + "/../Input/view." + view[0].Name.Split('.')[1] + "." + view[0].Name.Split('.')[2] + "." + view[0].Name.Split('.')[3] + ".squared.png" + " -o " + Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png" + " -s " + ((t * 0.25)) + " -v";
                                 Process p = new Process();
                                 Debug.Log("RUNNING : " + Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe");
-                                Debug.Log("Command Arguments : " + Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe" + fileName);
+                                Debug.Log("Command Arguments : " + Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe " + fileName);
                                 p.StartInfo = new ProcessStartInfo(Application.dataPath + "/../dain-ncnn/dain-ncnn-vulkan.exe", fileName)
                                 {
                                     WorkingDirectory = Application.dataPath + "/../dain-ncnn/",
@@ -256,25 +273,34 @@ public class Accordingly : MonoBehaviour
                                     Debug.Log("Waiting for File...");
                                     yield return new WaitForSeconds(10.2f);
                                 }
-
-
-                                srcTex.LoadImage(File.ReadAllBytes(view[v].FullName));
+                                yield return new WaitForSeconds(0.375f);
+                                yield return new WaitForEndOfFrame();
+                                srcTexA.LoadImage(File.ReadAllBytes(view[v].FullName));
+                                srcTexA.Apply();
+                                yield return new WaitForEndOfFrame();
+                                int orig_width = srcTexA.width + 0;
+                                int orig_height = srcTexA.height + 0;
+                                yield return new WaitForEndOfFrame();
+                                srcTex.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Input/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".squared.png"));
+                                yield return new WaitForEndOfFrame();
                                 srcTex.Apply();
-                                int orig_width = srcTex.width;
-                                int orig_height = srcTex.height;
-                                srcTex.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Input/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".Canvas.png"));
+                                yield return new WaitForEndOfFrame();
                                 srcImg = new Color[srcTex.width * srcTex.height];
                                 srcImg = srcTex.GetPixels();
+                                yield return new WaitForEndOfFrame();
                                 srcTex2.LoadImage(File.ReadAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png"));
                                 srcTex2.Apply();
+                                yield return new WaitForEndOfFrame();
                                 srcImg2 = new Color[srcTex2.width * srcTex2.height];
                                 srcImg2 = srcTex2.GetPixels();
+                                yield return new WaitForEndOfFrame();
                                 int w = srcTex2.width;
                                 int h = srcTex2.height;
                                 ri.texture = destTex2;
                                 ri.SizeToParent(0);
                                 destTex = new Texture2D(orig_width, orig_height, TextureFormat.ARGB32, false);
                                 destImg = new Color[orig_width * orig_height];
+                                yield return new WaitForEndOfFrame();
                                 if (orig_width <= srcTex2.width && orig_height <= srcTex2.height)
                                 {
                                     destImg = srcTex2.GetPixels((srcTex2.width / 2) - (orig_width / 2), (srcTex2.height / 2) - (orig_height / 2), orig_width, orig_height);
@@ -299,19 +325,24 @@ public class Accordingly : MonoBehaviour
                                             }
                                         }
                                     }
+                                    yield return new WaitForEndOfFrame();
                                     destTex.SetPixels(destImg);
                                     destTex.Apply();
+                                    yield return new WaitForEndOfFrame();
                                     byte[] destBytes = destTex.EncodeToPNG();
                                     File.WriteAllBytes(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".png", destBytes);
+                                    yield return new WaitForEndOfFrame();
                                     destTex2 = new Texture2D(orig_width, orig_height, TextureFormat.ARGB32, false);
                                     destTex2.SetPixels(destTex.GetPixels());
                                     destTex2.Apply();
+                                    yield return new WaitForEndOfFrame();
                                     ri.texture = destTex2;
                                     ri.SizeToParent(0);
                                     srcTex.filterMode = FilterMode.Point;
                                     srcTex2.filterMode = FilterMode.Point;
                                     destTex.filterMode = FilterMode.Point;
                                     destTex2.filterMode = FilterMode.Point;
+                                yield return new WaitForEndOfFrame();
                                     File.Delete(Application.dataPath + "/../Output/view." + view[v].Name.Split('.')[1] + "." + view[v].Name.Split('.')[2] + "." + view[v].Name.Split('.')[3] + ".t." + t + ".template.png");
 
                                 }
